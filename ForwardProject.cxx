@@ -35,7 +35,7 @@ int main(int argc, char **argv ){
   typedef float InputPixelType;
   typedef itk::Image< InputPixelType, 3> InputImageType;
   typedef float OutputPixelType;
-  typedef itk::Image< OutputPixelType, 3> outputImageType;
+  typedef itk::Image< OutputPixelType, 3> OutputImageType;
 
   //Read DICOM CT
 
@@ -46,7 +46,9 @@ int main(int argc, char **argv ){
   ImageIOType::Pointer gdcmIO = ImageIOType::New();
   NamesGeneratorType::Pointer namesGenerator = NamesGeneratorType::New();
 
-  namesGenerator->SetInputDirectory( vArg.getValue() );
+  namesGenerator->SetInputDirectory( imageArg.getValue() );
+  const ReaderType::FileNamesContainer & filenames =
+                            namesGenerator->GetInputFileNames();
 
   std::size_t numberOfFileNames = filenames.size();
   std::cout << numberOfFileNames << std::endl;
@@ -68,13 +70,13 @@ int main(int argc, char **argv ){
     return EXIT_FAILURE;
   }
 
-  InputImageType ct = reader->GetOutput()
+  InputImageType::Pointer ct = reader->GetOutput();
 
-  InputImageType::ImageRegion                ctRegion  = ct->GetLargestPossibleRegion();
-  InputImageType::ImageRegionType::SizeType  ctSize    = ctRegion.GetSize();
-  InputImageType::ImageRegionType::IndexType ctIndex   = ctRegion.GetIndex();
-  InputImageType::OriginType                 ctOrigin  = ct->GetOrigin();
-  InputImageType::ImageSpacingType           ctSpacing = ct->GetSpacing();
+  InputImageType::RegionType            ctRegion  = ct->GetLargestPossibleRegion();
+  InputImageType::RegionType::SizeType  ctSize    = ctRegion.GetSize();
+  InputImageType::RegionType::IndexType ctIndex   = ctRegion.GetIndex();
+  InputImageType::PointType             ctOrigin  = ct->GetOrigin();
+  InputImageType::SpacingType           ctSpacing = ct->GetSpacing();
 
   std::cout << "CT Image" << std::endl;
   std::cout << ctRegion << std::endl;
@@ -87,31 +89,31 @@ int main(int argc, char **argv ){
 
 
   InputImageType::Pointer projection = InputImageType::New();
-  InputImageType::ImageRegion projectionRegion;
-  InputImageType::ImageRegionType::SizeType projectionSize;
+  InputImageType::RegionType projectionRegion;
+  InputImageType::RegionType::SizeType projectionSize;
   projectionSize[0] = 128;
   projectionSize[1] = 128;
   projectionSize[2] = 1;
   projectionRegion.SetSize( projectionSize );
-  InputImageType::ImageRegionType::IndexType projectionIndex;
+  InputImageType::RegionType::IndexType projectionIndex;
   projectionIndex.Fill(0);
-  projectionRegion.SetIndex( projectionIndex )
-  InputImageType::OriginType projectionOrigin;
+  projectionRegion.SetIndex( projectionIndex );
+  InputImageType::PointType projectionOrigin;
   projectionOrigin = ctOrigin;
-  InputImageType::ImageSpacingType projectionSpacingType;
+  InputImageType::SpacingType projectionSpacing;
   projectionSpacing = ctSpacing;
   projectionSpacing[2] = 1;
 
   projection->SetOrigin( projectionOrigin );
   projection->SetSpacing( projectionSpacing );
   projection->SetRegions( projectionRegion );
-  projection->SetSpacSpacing( projectionSpacing );
+  projection->SetSpacing( projectionSpacing );
   projection->Allocate();
 
-  typedef rtk::JosephForwardProjectionImageFilter<OutputImageType, OutputImageType> ForwardProjectionType;
+  typedef rtk::JosephForwardProjectionImageFilter<InputImageType, OutputImageType> ForwardProjectionType;
   ForwardProjectionType::Pointer forwardProjection = ForwardProjectionType::New();
   forwardProjection->InPlaceOff();
-  forwardProjection->SetInput( projection->GetOutput() );
+  forwardProjection->SetInput( projection );
   forwardProjection->SetInput( 1, ct );
 
   typedef rtk::ThreeDCircularProjectionGeometry GeometryType;
