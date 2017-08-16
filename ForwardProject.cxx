@@ -79,8 +79,10 @@ int main(int argc, char **argv ){
   InputImageType::SpacingType           ctSpacing = ct->GetSpacing();
 
   std::cout << "CT Image" << std::endl;
-  std::cout << ctRegion << std::endl;
+  std::cout << ctRegion;
+  std::cout << "Origin" << stdd:endl;
   std::cout << ctOrigin << std::endl;
+  std::cout << "Spacing" << stdd:endl;
   std::cout << ctSpacing << std::endl;
 
 
@@ -90,9 +92,7 @@ int main(int argc, char **argv ){
 
   InputImageType::Pointer projection = InputImageType::New();
   InputImageType::RegionType projectionRegion;
-  InputImageType::RegionType::SizeType projectionSize;
-  projectionSize[0] = 128;
-  projectionSize[1] = 128;
+  InputImageType::RegionType::SizeType projectionSize = ctSize;
   projectionSize[2] = 1;
   projectionRegion.SetSize( projectionSize );
   InputImageType::RegionType::IndexType projectionIndex;
