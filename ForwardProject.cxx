@@ -80,10 +80,12 @@ int main(int argc, char **argv ){
 
   std::cout << "CT Image" << std::endl;
   std::cout << ctRegion;
-  std::cout << "Origin" << stdd:endl;
+  std::cout << "Origin" << std::endl;
   std::cout << ctOrigin << std::endl;
-  std::cout << "Spacing" << stdd:endl;
+  std::cout << "Spacing" << std::endl;
   std::cout << ctSpacing << std::endl;
+  std::cout << "Direction" << std::endl;
+  std::cout << ct->GetDirection() << std::endl;
 
 
 
@@ -118,6 +120,20 @@ int main(int argc, char **argv ){
 
   typedef rtk::ThreeDCircularProjectionGeometry GeometryType;
   GeometryType::Pointer geometry = GeometryType::New();
+
+  GeometryType::PointType sourcePosition = ctOrigin;
+  sourcePosition[0] += ctSize[0] * ctSpacing[0] / 2;
+  sourcePosition[1] += ctSize[1] * ctSpacing[1] / 2;
+  GeometryType::PointType detectorPosition = sourcePosition;
+  sourcePosition[2] += ctSize[2] * ctSpacing[2];
+  GeometryType::VectorType detectorRow;
+  detectorRow.Fill(0);
+  detectorRow[0] = 1;
+  GeometryType::VectorType detectorCol;
+  detectorCol.Fill(0);
+  detectorCol[1] = 1;
+  geometry->AddProjection( sourcePosition, detectorPosition, detectorRow, detectorCol);
+  std::cout << geometry << std::endl;
   forwardProjection->SetGeometry( geometry );
 
   typedef  itk::ImageFileWriter< OutputImageType  > WriterType;
@@ -126,6 +142,11 @@ int main(int argc, char **argv ){
   writer->SetInput( forwardProjection->GetOutput() );
   writer->Update();
 
+  typedef  itk::ImageFileWriter< InputImageType  > InputWriterType;
+  InputWriterType::Pointer iwriter = WriterType::New();
+  iwriter->SetFileName( "Input.nrrd" );
+  iwriter->SetInput( ct );
+  iwriter->Update();
 
   return EXIT_SUCCESS;
 }
