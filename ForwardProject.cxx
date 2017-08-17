@@ -64,6 +64,10 @@ int main(int argc, char **argv ){
   InputImageType::RegionType::IndexType ctIndex   = ctRegion.GetIndex();
   InputImageType::PointType             ctOrigin  = ct->GetOrigin();
   InputImageType::SpacingType           ctSpacing = ct->GetSpacing();
+  ctOrigin[0] = - (float)ctSize[0] * ctSpacing[0]/2;
+  ctOrigin[1] = - (float)ctSize[1] * ctSpacing[1]/2;
+  ctOrigin[2] = - (float)ctSize[2] * ctSpacing[2]/2;
+  ct->SetOrigin( ctOrigin );
 
   std::cout << "CT Image" << std::endl;
   std::cout << ctRegion;
@@ -82,27 +86,27 @@ int main(int argc, char **argv ){
   InputImageType::Pointer projection = InputImageType::New();
   InputImageType::RegionType projectionRegion;
   InputImageType::RegionType::SizeType projectionSize = ctSize;
-  projectionSize[0] = 2560;
-  projectionSize[1] = 3072;
+  projectionSize[0] = 1000;
+  projectionSize[1] = 1000;
   projectionSize[2] = 1;
   projectionRegion.SetSize( projectionSize );
   InputImageType::RegionType::IndexType projectionIndex;
   projectionIndex.Fill(0);
   projectionRegion.SetIndex( projectionIndex );
-  InputImageType::PointType projectionOrigin = ctOrigin;
-  projectionOrigin.Fill(0);
-  //projectionOrigin[0] -= ctSize[0]*ctSpacing[0];
-  //projectionOrigin[1] = ctOrigin[2] - ctSize[2]*ctSpacing[2];
-  //projectionOrigin[2] -= ctSize[2]*ctSpacing[2];
   InputImageType::SpacingType projectionSpacing;
   projectionSpacing = ctSpacing;
   projectionSpacing[0] = ctSpacing[0] * ctSize[0] / projectionSize[0];
   projectionSpacing[1] = ctSpacing[1] * ctSize[1] / projectionSize[1];
   projectionSpacing[2] = 1;
+  InputImageType::PointType projectionOrigin = ctOrigin;
+  projectionOrigin.Fill(0);
+  //projectionOrigin[0] = -projectionSize[0]*projectionSpacing[0]/2;
+  //projectionOrigin[1] = -projectionSize[1]*projectionSpacing[1]/2;
+  //projectionOrigin[2] = 0;
 
-  projection->SetOrigin( projectionOrigin );
+  projection->SetOrigin(  projectionOrigin  );
   projection->SetSpacing( projectionSpacing );
-  projection->SetRegions( projectionRegion );
+  projection->SetRegions( projectionRegion  );
   projection->SetSpacing( projectionSpacing );
   projection->Allocate();
 
@@ -118,14 +122,14 @@ int main(int argc, char **argv ){
 
 
   geometry->AddProjection(
-        137 + ctSize[2]*ctSpacing[2] * 6,
-        137 + ctSize[2]*ctSpacing[2] * 7,
-        0,
+        4*ctSize[2]*ctSpacing[2],
+        5*ctSize[2]*ctSpacing[2] + 137, 0,
         ctOrigin[0] + ctSize[0] * ctSpacing[0]/2 - projectionSpacing[0] * projectionSize[0]/2,
         ctOrigin[1] + ctSize[1] * ctSpacing[1]/2 - projectionSpacing[1] * projectionSize[1]/2,
         0, 0,
         ctOrigin[0] + ctSize[0]*ctSpacing[0]/2,
-        ctOrigin[1] + ctSize[1]*ctSpacing[1]/2);
+        ctOrigin[1] + ctSize[1]*ctSpacing[1]/2 );
+
   std::cout << geometry << std::endl;
   forwardProjection->SetGeometry( geometry );
 

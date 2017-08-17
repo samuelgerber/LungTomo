@@ -108,15 +108,11 @@ int main(int argc, char **argv ){
 
     resampler->SetInput(image);
     resampler->Update();
-    highRes = resampler->GetOutput();
 
-    typedef  itk::ImageFileWriter< ImageType  > WriterType;
-    WriterType::Pointer writer = WriterType::New();
-    writer->SetFileName( "tmp.nrrd"  );
-    writer->SetInput( highRes );
-    writer->Update();
-
-    if( i > 0){
+    if( i == 0 ){
+      highRes = resampler->GetOutput();
+    }
+    else{
       typedef itk::AddImageFilter<ImageType, ImageType, ImageType> AddImageFilter;
       AddImageFilter::Pointer add = AddImageFilter::New();
       add->SetInput1( highRes );
