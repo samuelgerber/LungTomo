@@ -11,3 +11,8 @@ include(${RTK_USE_FILE})
 add_executable(ForwardProject ForwardProject.cxx )
 target_link_libraries(ForwardProject ${RTK_LIBRARIES})
 target_link_libraries(ForwardProject ${ITK_LIBRARIES})
+
+
+add_executable(HighResCT HighResCT.cxx )
+target_link_libraries(HighResCT ${RTK_LIBRARIES})
+target_link_libraries(HighResCT ${ITK_LIBRARIES})

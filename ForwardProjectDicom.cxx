@@ -5,7 +5,8 @@
 
 #include "itkGDCMImageIO.h"
 #include "itkGDCMSeriesFileNames.h"
-#include "itkImageFileReader.h"
+#include "itkImageSeriesReader.h"
+#include "itkImageSeriesWriter.h"
 #include <rtkThreeDCircularProjectionGeometry.h>
 #include "rtkJosephForwardProjectionImageFilter.h"
 #include "itkImageFileWriter.h"
@@ -16,7 +17,7 @@ int main(int argc, char **argv ){
   //Command line parsing
   TCLAP::CmdLine cmd("Derivative Ratio", ' ', "1");
 
-  TCLAP::ValueArg<std::string> imageArg("v","volume","CT Image", true, "",
+  TCLAP::ValueArg<std::string> imageArg("v","volume","Dicom CT folder", true, "",
       "filename");
   cmd.add(imageArg);
 
@@ -39,10 +40,36 @@ int main(int argc, char **argv ){
 
   //Read DICOM CT
 
-  typedef itk::ImageFileReader< InputImageType >     ReaderType;
+  typedef itk::ImageSeriesReader< InputImageType >     ReaderType;
+  typedef itk::GDCMImageIO                        ImageIOType;
+  typedef itk::GDCMSeriesFileNames                NamesGeneratorType;
+
+  ImageIOType::Pointer gdcmIO = ImageIOType::New();
+  NamesGeneratorType::Pointer namesGenerator = NamesGeneratorType::New();
+
+  namesGenerator->SetInputDirectory( imageArg.getValue() );
+  const ReaderType::FileNamesContainer & filenames =
+                            namesGenerator->GetInputFileNames();
+
+  std::size_t numberOfFileNames = filenames.size();
+  std::cout << numberOfFileNames << std::endl;
+  for(unsigned int fni = 0; fni < numberOfFileNames; ++fni){
+    std::cout << "filename # " << fni << " = ";
+    std::cout << filenames[fni] << std::endl;
+  }
+
   ReaderType::Pointer reader = ReaderType::New();
-  reader->SetFileName( imageArg.getValue() );
-  reader->Update();
+  reader->SetImageIO( gdcmIO );
+  reader->SetFileNames( filenames );
+
+  try{
+    reader->Update();
+  }
+  catch (itk::ExceptionObject &excp){
+    std::cerr << "Exception thrown while writing the image" << std::endl;
+    std::cerr << excp << std::endl;
+    return EXIT_FAILURE;
+  }
 
   InputImageType::Pointer ct = reader->GetOutput();
   InputImageType::DirectionType direction = ct->GetDirection();
@@ -115,6 +142,22 @@ int main(int argc, char **argv ){
   typedef rtk::ThreeDCircularProjectionGeometry GeometryType;
   GeometryType::Pointer geometry = GeometryType::New();
 
+  /*
+  GeometryType::PointType sourcePosition = ctOrigin;
+  sourcePosition[0] += ctSize[0] * ctSpacing[0] / 2;
+  sourcePosition[1] += ctSize[1] * 4*ctSpacing[1];
+  sourcePosition[2] += ctSize[2] * ctSpacing[2] / 2;
+  GeometryType::PointType detectorPosition = ctOrigin;
+  //detectorPosition[0] += ctSize[0] * ctSpacing[0] ;
+  //detectorPosition[1] += ctSize[1] * 4*ctSpacing[1];
+  //detectorPosition[2] += ctSize[2] * ctSpacing[2] ;
+  GeometryType::VectorType detectorRow;
+  detectorRow.Fill(0);
+  detectorRow[0] = 1;
+  GeometryType::VectorType detectorCol;
+  detectorCol.Fill(0);
+  detectorCol[2] = -1;
+  */
 
 
   geometry->AddProjection(
