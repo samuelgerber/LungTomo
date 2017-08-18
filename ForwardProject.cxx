@@ -86,8 +86,8 @@ int main(int argc, char **argv ){
   InputImageType::Pointer projection = InputImageType::New();
   InputImageType::RegionType projectionRegion;
   InputImageType::RegionType::SizeType projectionSize = ctSize;
-  projectionSize[0] = 1000;
-  projectionSize[1] = 1000;
+  projectionSize[0] = 512;//2464;
+  projectionSize[1] = 512;//2964;
   projectionSize[2] = 1;
   projectionRegion.SetSize( projectionSize );
   InputImageType::RegionType::IndexType projectionIndex;
@@ -120,15 +120,17 @@ int main(int argc, char **argv ){
   GeometryType::Pointer geometry = GeometryType::New();
 
 
-
+  float xOff = ctOrigin[0] + ctSize[0] * ctSpacing[0]/2;
+  float yOff = ctOrigin[1] + ctSize[1] * ctSpacing[1]/2;
+  float zOff = 0;
   geometry->AddProjection(
-        4*ctSize[2]*ctSpacing[2],
-        5*ctSize[2]*ctSpacing[2] + 137, 0,
-        ctOrigin[0] + ctSize[0] * ctSpacing[0]/2 - projectionSpacing[0] * projectionSize[0]/2,
-        ctOrigin[1] + ctSize[1] * ctSpacing[1]/2 - projectionSpacing[1] * projectionSize[1]/2,
+        7*ctSize[2]*ctSpacing[2] + zOff,
+        8*ctSize[2]*ctSpacing[2] + zOff, 0,
+        xOff - projectionSpacing[0] * projectionSize[0]/2,
+        yOff - projectionSpacing[1] * projectionSize[1]/2,
         0, 0,
-        ctOrigin[0] + ctSize[0]*ctSpacing[0]/2,
-        ctOrigin[1] + ctSize[1]*ctSpacing[1]/2 );
+        xOff ,
+        yOff);
 
   std::cout << geometry << std::endl;
   forwardProjection->SetGeometry( geometry );
