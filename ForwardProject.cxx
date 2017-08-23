@@ -71,7 +71,7 @@ int main(int argc, char **argv ){
 
   std::cout << "CT Image" << std::endl;
   std::cout << ctRegion;
-  std::cout << "Origin" << std::endl;
+ std::cout << "Origin" << std::endl;
   std::cout << ctOrigin << std::endl;
   std::cout << "Spacing" << std::endl;
   std::cout << ctSpacing << std::endl;
@@ -86,8 +86,8 @@ int main(int argc, char **argv ){
   InputImageType::Pointer projection = InputImageType::New();
   InputImageType::RegionType projectionRegion;
   InputImageType::RegionType::SizeType projectionSize = ctSize;
-  projectionSize[0] = 512;//2464;
-  projectionSize[1] = 512;//2964;
+  projectionSize[0] = 2464;
+  projectionSize[1] = 2964;
   projectionSize[2] = 1;
   projectionRegion.SetSize( projectionSize );
   InputImageType::RegionType::IndexType projectionIndex;
