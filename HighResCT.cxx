@@ -13,6 +13,7 @@
 #include "itkAddImageFilter.h"
 #include "itkDivideImageFilter.h"
 #include "itkResampleImageFilter.h"
+#include "itkSmoothingRecursiveGaussianImageFilter.h"
 
 #include <vector>
 
@@ -77,9 +78,18 @@ int main(int argc, char **argv ){
     }
     ImageType::Pointer image = reader->GetOutput();
 
-    std::cout << image->GetLargestPossibleRegion();
-    std::cout << image->GetSpacing() << std::endl;
-    std::cout << image->GetOrigin() << std::endl << std::endl;
+    ImageType::SpacingType spacing= image->GetSpacing();
+    std::cout << spacing << std::endl;
+
+    /*
+    typedef itk::SmoothingRecursiveGaussianImageFilter<ImageType, ImageType> SmoothingFilter;
+    SmoothingFilter::Pointer  smoothing =  SmoothingFilter::New();
+    SmoothingFilter::SigmaArrayType sigma = spacing;
+    smoothing->SetSigmaArray( sigma );
+    smoothing->SetInput(image);
+    smoothing->Update();
+    image = smoothing->GetOutput();
+*/
 
     typedef itk::ResampleImageFilter<ImageType, ImageType> ResampleType;
     ResampleType::Pointer resampler = ResampleType::New();
@@ -89,7 +99,6 @@ int main(int argc, char **argv ){
       resampler->SetSize( highResSize );
 
       ImageType::SpacingType highResSpacing;
-      ImageType::SpacingType spacing= image->GetSpacing();
       ImageType::SizeType size = image->GetLargestPossibleRegion().GetSize();
       highResSpacing[0] = spacing[0] * size[0] / highResSize[0];
       highResSpacing[1] = spacing[1] * size[1] / highResSize[1];

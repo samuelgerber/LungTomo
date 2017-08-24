@@ -6,6 +6,7 @@
 #include "itkGDCMImageIO.h"
 #include "itkGDCMSeriesFileNames.h"
 #include "itkImageFileReader.h"
+#include "itkImageSeriesReader.h"
 #include <rtkThreeDCircularProjectionGeometry.h>
 #include "rtkJosephForwardProjectionImageFilter.h"
 #include "itkImageFileWriter.h"
@@ -24,6 +25,9 @@ int main(int argc, char **argv ){
       "filename");
   cmd.add(prefixArg);
 
+  TCLAP::SwitchArg dArg( "d", "dicom", "Volume is a dicom folder");
+  cmd.add( dArg );
+
   try{
     cmd.parse( argc, argv );
   }
@@ -38,15 +42,49 @@ int main(int argc, char **argv ){
   typedef itk::Image< OutputPixelType, 3> OutputImageType;
 
   //Read DICOM CT
+  InputImageType::Pointer ct;
+  if( dArg.getValue() ){
+ 
+    typedef itk::ImageSeriesReader< InputImageType >     ReaderType;
+    typedef itk::GDCMImageIO                        ImageIOType;
+    typedef itk::GDCMSeriesFileNames                NamesGeneratorType;
 
-  typedef itk::ImageFileReader< InputImageType >     ReaderType;
-  ReaderType::Pointer reader = ReaderType::New();
-  reader->SetFileName( imageArg.getValue() );
-  reader->Update();
+    ImageIOType::Pointer gdcmIO = ImageIOType::New();
+    NamesGeneratorType::Pointer namesGenerator = NamesGeneratorType::New();
 
-  InputImageType::Pointer ct = reader->GetOutput();
+    namesGenerator->SetInputDirectory( imageArg.getValue() );
+    const ReaderType::FileNamesContainer & filenames =
+                            namesGenerator->GetInputFileNames();
+
+    std::size_t numberOfFileNames = filenames.size();
+    
+    std::cout << numberOfFileNames << std::endl;
+    /*
+    for(unsigned int fni = 0; fni < numberOfFileNames; ++fni){
+      std::cout << "filename # " << fni << " = ";
+      std::cout << filenames[fni] << std::endl;
+    }
+    */
+
+    ReaderType::Pointer reader = ReaderType::New();
+    reader->SetImageIO( gdcmIO );
+    reader->SetFileNames( filenames );
+
+    reader->Update();
+    ct = reader->GetOutput();
+  
+  }
+  else{
+
+    typedef itk::ImageFileReader< InputImageType >     ReaderType;
+    ReaderType::Pointer reader = ReaderType::New();
+    reader->SetFileName( imageArg.getValue() );
+    reader->Update();
+    ct = reader->GetOutput();
+  }
   InputImageType::DirectionType direction = ct->GetDirection();
   direction.SetIdentity();
+  //direction(2,2) = -1;
   ct->SetDirection(direction);
 
   /*
@@ -71,7 +109,7 @@ int main(int argc, char **argv ){
 
   std::cout << "CT Image" << std::endl;
   std::cout << ctRegion;
- std::cout << "Origin" << std::endl;
+  std::cout << "Origin" << std::endl;
   std::cout << ctOrigin << std::endl;
   std::cout << "Spacing" << std::endl;
   std::cout << ctSpacing << std::endl;
@@ -82,13 +120,14 @@ int main(int argc, char **argv ){
 
   //Setup forward projection
 
+  int nProjections = 5;
 
   InputImageType::Pointer projection = InputImageType::New();
   InputImageType::RegionType projectionRegion;
   InputImageType::RegionType::SizeType projectionSize = ctSize;
-  projectionSize[0] = 2464;
-  projectionSize[1] = 2964;
-  projectionSize[2] = 1;
+  projectionSize[0] = 768;
+  projectionSize[1] = 768;
+  projectionSize[2] = nProjections;
   projectionRegion.SetSize( projectionSize );
   InputImageType::RegionType::IndexType projectionIndex;
   projectionIndex.Fill(0);
@@ -120,17 +159,21 @@ int main(int argc, char **argv ){
   GeometryType::Pointer geometry = GeometryType::New();
 
 
+  int yStep = 40;
   float xOff = ctOrigin[0] + ctSize[0] * ctSpacing[0]/2;
   float yOff = ctOrigin[1] + ctSize[1] * ctSpacing[1]/2;
-  float zOff = 0;
-  geometry->AddProjection(
-        7*ctSize[2]*ctSpacing[2] + zOff,
-        8*ctSize[2]*ctSpacing[2] + zOff, 0,
+  float zOff = 120;
+  for( int i=0; i<nProjections; i++){
+     
+    geometry->AddProjection(
+        4*ctSize[2]*ctSpacing[2] + zOff,
+        5*ctSize[2]*ctSpacing[2] + zOff+5, 0,
         xOff - projectionSpacing[0] * projectionSize[0]/2,
         yOff - projectionSpacing[1] * projectionSize[1]/2,
         0, 0,
         xOff ,
-        yOff);
+        yOff + (i  - (nProjections-1)/2.0 ) * yStep);
+  }
 
   std::cout << geometry << std::endl;
   forwardProjection->SetGeometry( geometry );
