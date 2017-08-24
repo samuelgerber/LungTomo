@@ -21,9 +21,9 @@ int main(int argc, char **argv ){
       "filename");
   cmd.add(imageArg);
 
-  TCLAP::ValueArg<std::string> prefixArg("p","prefix","Prefix for storing output images", true, "",
+  TCLAP::ValueArg<std::string> outputArg("o","ouptu","Output image filename", true, "",
       "filename");
-  cmd.add(prefixArg);
+  cmd.add( outputArg );
 
   TCLAP::SwitchArg dArg( "d", "dicom", "Volume is a dicom folder");
   cmd.add( dArg );
@@ -44,7 +44,7 @@ int main(int argc, char **argv ){
   //Read DICOM CT
   InputImageType::Pointer ct;
   if( dArg.getValue() ){
- 
+
     typedef itk::ImageSeriesReader< InputImageType >     ReaderType;
     typedef itk::GDCMImageIO                        ImageIOType;
     typedef itk::GDCMSeriesFileNames                NamesGeneratorType;
@@ -57,7 +57,7 @@ int main(int argc, char **argv ){
                             namesGenerator->GetInputFileNames();
 
     std::size_t numberOfFileNames = filenames.size();
-    
+
     std::cout << numberOfFileNames << std::endl;
     /*
     for(unsigned int fni = 0; fni < numberOfFileNames; ++fni){
@@ -72,7 +72,7 @@ int main(int argc, char **argv ){
 
     reader->Update();
     ct = reader->GetOutput();
-  
+
   }
   else{
 
@@ -82,20 +82,25 @@ int main(int argc, char **argv ){
     reader->Update();
     ct = reader->GetOutput();
   }
-  InputImageType::DirectionType direction = ct->GetDirection();
-  direction.SetIdentity();
+  //InputImageType::DirectionType direction = ct->GetDirection();
+  //direction.SetIdentity();
+  //for(int i=0; i<3; i++){
+  //  for(int j=0; j<3; j++){
+  //     direction(i, j) = fabs(direction(i,j));
+  //  }
+  //}
   //direction(2,2) = -1;
-  ct->SetDirection(direction);
+  //ct->SetDirection(direction);
 
-  /*
+
   typedef itk::OrientImageFilter<InputImageType,InputImageType> OrientFilter;
   OrientFilter::Pointer orienter = OrientFilter::New();
   orienter->UseImageDirectionOn();
-  orienter->SetDesiredCoordinateOrientation(itk::SpatialOrientation::ITK_COORDINATE_ORIENTATION_LSA);//ITK_COORDINATE_ORIENTATION_RIP);
+  orienter->SetDesiredCoordinateOrientation(itk::SpatialOrientation::ITK_COORDINATE_ORIENTATION_RIP);
   orienter->SetInput( ct );
   orienter->Update();
   ct = orienter->GetOutput();
-  */
+
 
   InputImageType::RegionType            ctRegion  = ct->GetLargestPossibleRegion();
   InputImageType::RegionType::SizeType  ctSize    = ctRegion.GetSize();
@@ -120,7 +125,7 @@ int main(int argc, char **argv ){
 
   //Setup forward projection
 
-  int nProjections = 5;
+  int nProjections = 20;
 
   InputImageType::Pointer projection = InputImageType::New();
   InputImageType::RegionType projectionRegion;
@@ -159,18 +164,18 @@ int main(int argc, char **argv ){
   GeometryType::Pointer geometry = GeometryType::New();
 
 
-  int yStep = 40;
+  int yStep = 5;
   float xOff = ctOrigin[0] + ctSize[0] * ctSpacing[0]/2;
   float yOff = ctOrigin[1] + ctSize[1] * ctSpacing[1]/2;
   float zOff = 120;
   for( int i=0; i<nProjections; i++){
-     
+
     geometry->AddProjection(
-        4*ctSize[2]*ctSpacing[2] + zOff,
-        5*ctSize[2]*ctSpacing[2] + zOff+5, 0,
+        zOff,
+        ctSize[2]*ctSpacing[2] + zOff+10, 0,
         xOff - projectionSpacing[0] * projectionSize[0]/2,
         yOff - projectionSpacing[1] * projectionSize[1]/2,
-        0, 0,
+        -90, 0,
         xOff ,
         yOff + (i  - (nProjections-1)/2.0 ) * yStep);
   }
@@ -180,7 +185,7 @@ int main(int argc, char **argv ){
 
   typedef  itk::ImageFileWriter< OutputImageType  > WriterType;
   WriterType::Pointer writer = WriterType::New();
-  writer->SetFileName( "projection.nrrd" );
+  writer->SetFileName( outputArg.getValue() );
   writer->SetInput( forwardProjection->GetOutput() );
   writer->Update();
 
